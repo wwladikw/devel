@@ -43,9 +43,9 @@
 
 
 struct keystone_timer_map {
-	char padding1[4];
+	uint32_t padding1;
 	uint32_t emumgt_clkspd; /* Emulation management and clock speed register */
-	char padding2[6];
+	uint32_t padding2[2];
 	uint32_t cntlo;		/* Counter register low */
 	uint32_t cnthi;		/* Counter register high */
 	uint32_t prdlo;		/* Period register low */
@@ -53,7 +53,7 @@ struct keystone_timer_map {
 	uint32_t tcr;		/* Timer control register */
 	uint32_t tgcr;		/* Timer global control register */
 	uint32_t wdtcr;		/* Watchdog timer control register */
-	char padding3[6];
+	uint32_t padding3[2];
 	uint32_t rello;		/* Timer reload register low */
 	uint32_t relhi;		/* Timer reload register high */
 	uint32_t caplo;		/* Timer capture register low */
@@ -214,6 +214,7 @@ ps_get_timer(enum timer_id id, timer_config_t *config)
 	timer->handle_irq = keystone_handle_irq;
 	timer->get_nth_irq = keystone_get_nth_irq;
 
+	assert(sizeof(struct keystone_timer_map) == 0x44 + 4);
 	kt->hw = (struct keystone_timer_map *)config->vaddr;
 	kt->irq = config->irq;
 
