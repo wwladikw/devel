@@ -27,13 +27,13 @@
 
 
 /* Timer register bitfields */
-#define TCR_ENAMODE_MASK		0xC0
-#define TCR_ENAMODE_ONESHOT_MASK	0x40
-#define TCR_ENAMODE_PERIODIC_MASK	0x80
+#define TCR_ENAMODE		(BIT(6) | BIT(7))
+#define TCR_ENAMODE_ONESHOT	 BIT(6)
+#define TCR_ENAMODE_PERIODIC	 BIT(7)
 
-#define TGCR_TIM_UNRESET_MASK		0x03
-#define INTCTLSTAT_ENINT_MASK		0x01
-#define INTCTLSTAT_ACK_MASK		0x03
+#define TGCR_TIM_UNRESET	(BIT(0) | BIT(1))
+#define INTCTLSTAT_ENINT	 BIT(0)
+#define INTCTLSTAT_CLEAR	(BIT(0) | BIT(1))
 
 #define TICKS_PER_SECOND 204800000
 #define TIMER_INTERVAL_TICKS(ns) ((uint32_t)(1ULL * (ns) * TICKS_PER_SECOND / 1000 / 1000 / 1000))
@@ -77,14 +77,14 @@ keystone_timer_reset(const pstimer_t *timer)
 	/* reset timer as 64-bit, no pre-scaler, plus features are disabled */
 	kt->hw->tgcr = 0;
 	/* unreset timer */
-	kt->hw->tgcr = TGCR_TIM_UNRESET_MASK;
+	kt->hw->tgcr = TGCR_TIM_UNRESET;
 
 	/* init counter to zero */
 	kt->hw->cntlo = 0;
 	kt->hw->cnthi = 0;
 
 	/* enable timer interrupts */
-	kt->hw->intctlstat = INTCTLSTAT_ENINT_MASK;
+	kt->hw->intctlstat = INTCTLSTAT_ENINT;
 }
 
 static int
@@ -92,7 +92,7 @@ keystone_timer_stop(const pstimer_t *timer)
 {
 	keystone_timer_t *kt = (keystone_timer_t *)timer->data;
 
-	kt->hw->tcr &= ~(TCR_ENAMODE_MASK);
+	kt->hw->tcr &= ~(TCR_ENAMODE);
 
 	return 0;
 }
@@ -102,7 +102,7 @@ keystone_timer_start(const pstimer_t *timer)
 {
 	keystone_timer_t *kt = (keystone_timer_t *)timer->data;
 
-	kt->hw->tcr |= TCR_ENAMODE_MASK;
+	kt->hw->tcr |= TCR_ENAMODE;
 
 	return 0;
 }
@@ -119,7 +119,7 @@ keystone_set_timeo(const pstimer_t *timer, uint64_t ns, int tcrFlags)
 		return EINVAL;
 
 	tcr = kt->hw->tcr;
-	off = tcr & ~(TCR_ENAMODE_MASK);
+	off = tcr & ~(TCR_ENAMODE);
 
 	/* set enable mode */
 	tcr |= tcrFlags;
@@ -135,7 +135,7 @@ keystone_set_timeo(const pstimer_t *timer, uint64_t ns, int tcrFlags)
 	kt->hw->prdhi = (ticks >> 32);
 
 	/* clear interrupt status bit */
-	kt->hw->intctlstat = INTCTLSTAT_ACK_MASK;
+	kt->hw->intctlstat = INTCTLSTAT_CLEAR;
 
 	/*
 	 * enable timer
@@ -149,13 +149,13 @@ keystone_set_timeo(const pstimer_t *timer, uint64_t ns, int tcrFlags)
 static int
 keystone_periodic(const pstimer_t *timer, uint64_t ns)
 {
-	return keystone_set_timeo(timer, ns, TCR_ENAMODE_PERIODIC_MASK);
+	return keystone_set_timeo(timer, ns, TCR_ENAMODE_PERIODIC);
 }
 
 static int
 keystone_oneshot_relative(const pstimer_t *timer, uint64_t ns)
 {
-	return keystone_set_timeo(timer, ns, TCR_ENAMODE_ONESHOT_MASK);
+	return keystone_set_timeo(timer, ns, TCR_ENAMODE_ONESHOT);
 }
 
 static uint64_t
@@ -170,7 +170,8 @@ static void
 keystone_handle_irq(const pstimer_t *timer, uint32_t irq)
 {
 	keystone_timer_t *kt = (keystone_timer_t *)timer->data;
-	kt->hw->intctlstat = INTCTLSTAT_ACK_MASK;
+
+	kt->hw->intctlstat = INTCTLSTAT_CLEAR;
 }
 
 static uint32_t
